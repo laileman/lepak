@@ -39,6 +39,7 @@ class LepakClient:
         access_key_secret: Optional[str] = None,
         runtime_options: Optional[RuntimeOptions] = DEFAULT_RUNTIME_OPTIONS,
         region_id: str = DEFAULT_REGION_ID,
+        region_enabled: bool = True,
         **kwargs: Dict[str, Any],
     ):
         """
@@ -58,6 +59,7 @@ class LepakClient:
         self.version = version
         self.region_id = region_id
         self.kwargs = kwargs
+        self.region_enabled = region_enabled
         self.runtime_options = runtime_options
 
     def _build_config(self) -> Config:
@@ -65,14 +67,22 @@ class LepakClient:
         if not self.ak or not self.sk:
             return Config(
                 credential=CredClient(),
-                endpoint=f"{self.service_name}.{self.region_id}.aliyuncs.com",
+                endpoint=(
+                    f"{self.service_name}.{self.region_id}.aliyuncs.com"
+                    if self.region_enabled
+                    else f"{self.service_name}.aliyuncs.com"
+                ),
                 **self.kwargs,
             )
         return Config(
             access_key_id=self.ak,
             access_key_secret=self.sk,
             region_id=self.region_id,
-            endpoint=f"{self.service_name}.{self.region_id}.aliyuncs.com",
+            endpoint=(
+                f"{self.service_name}.{self.region_id}.aliyuncs.com"
+                if self.region_enabled
+                else f"{self.service_name}.aliyuncs.com"
+            ),
             **self.kwargs,
         )
 
