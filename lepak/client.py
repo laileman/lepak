@@ -1,8 +1,17 @@
+from tkinter import N
 from alibabacloud_tea_openapi.client import Client
 from alibabacloud_tea_openapi.models import Config, Params, OpenApiRequest
 from alibabacloud_tea_util.models import RuntimeOptions
 from alibabacloud_credentials.client import Client as CredClient
 from typing import Optional, Dict, Any, Tuple
+
+DEFAULT_REGION_ID = "cn-hangzhou"
+DEFAULT_RUNTIME_OPTIONS = RuntimeOptions(
+    read_timeout=10000,
+    connect_timeout=10000,
+    max_attempts=3,
+    autoretry=True,
+)
 
 
 class LepakClient:
@@ -28,7 +37,9 @@ class LepakClient:
         version: str,
         access_key_id: Optional[str] = None,
         access_key_secret: Optional[str] = None,
-        region_id: str = "cn-hangzhou",
+        runtime_options: Optional[RuntimeOptions] = DEFAULT_RUNTIME_OPTIONS,
+        region_id: str = DEFAULT_REGION_ID,
+        **kwargs: Dict[str, Any],
     ):
         """
         Initialize a Lepak client instance.
@@ -39,12 +50,15 @@ class LepakClient:
             access_key_id: Optional AccessKey ID. If omitted, default credential chain is used.
             access_key_secret: Optional AccessKey Secret. If omitted, default credential chain is used.
             region_id: Default region for requests, for example `cn-hangzhou`.
+            runtime_options: Optional runtime options for requests.
         """
         self.service_name = service_name
         self.ak = access_key_id
         self.sk = access_key_secret
         self.version = version
         self.region_id = region_id
+        self.kwargs = kwargs
+        self.runtime_options = runtime_options
 
     def _build_config(self) -> Config:
         """Build OpenAPI config using explicit AK/SK or the default credential chain."""
@@ -52,12 +66,14 @@ class LepakClient:
             return Config(
                 credential=CredClient(),
                 endpoint=f"{self.service_name}.{self.region_id}.aliyuncs.com",
+                **self.kwargs,
             )
         return Config(
             access_key_id=self.ak,
             access_key_secret=self.sk,
             region_id=self.region_id,
             endpoint=f"{self.service_name}.{self.region_id}.aliyuncs.com",
+            **self.kwargs,
         )
 
     def _build_request(
@@ -94,16 +110,7 @@ class LepakClient:
         config = self._build_config()
         call_client = Client(config)
         api_params, request = self._build_request(action, params)
-        runtime_options = (
-            RuntimeOptions(runtime)
-            if runtime
-            else RuntimeOptions(
-                timeout=10000,
-                connect_timeout=5000,
-                autoretry=True,
-                max_attempts=3,
-            )
-        )
+        runtime_options = RuntimeOptions(runtime) if runtime else self.runtime_options
         return call_client.call_api(api_params, request, runtime_options)
 
     async def acall(
@@ -116,14 +123,5 @@ class LepakClient:
         config = self._build_config()
         call_client = Client(config)
         api_params, request = self._build_request(action, params)
-        runtime_options = (
-            RuntimeOptions(runtime)
-            if runtime
-            else RuntimeOptions(
-                timeout=10000,
-                connect_timeout=5000,
-                autoretry=True,
-                max_attempts=3,
-            )
-        )
+        runtime_options = RuntimeOptions(runtime) if runtime else self.runtime_options
         return await call_client.call_api_async(api_params, request, runtime_options)
