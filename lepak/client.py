@@ -94,7 +94,16 @@ class LepakClient:
         config = self._build_config()
         call_client = Client(config)
         api_params, request = self._build_request(action, params)
-        runtime_options = RuntimeOptions(runtime) if runtime else None
+        runtime_options = (
+            RuntimeOptions(runtime)
+            if runtime
+            else RuntimeOptions(
+                timeout=10000,
+                connect_timeout=5000,
+                autoretry=True,
+                max_attempts=3,
+            )
+        )
         return call_client.call_api(api_params, request, runtime_options)
 
     async def acall(
@@ -107,5 +116,14 @@ class LepakClient:
         config = self._build_config()
         call_client = Client(config)
         api_params, request = self._build_request(action, params)
-        runtime_options = RuntimeOptions(runtime) if runtime else None
+        runtime_options = (
+            RuntimeOptions(runtime)
+            if runtime
+            else RuntimeOptions(
+                timeout=10000,
+                connect_timeout=5000,
+                autoretry=True,
+                max_attempts=3,
+            )
+        )
         return await call_client.call_api_async(api_params, request, runtime_options)
