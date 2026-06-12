@@ -2,6 +2,7 @@ from alibabacloud_tea_openapi.client import Client
 from alibabacloud_tea_openapi.models import Config, Params, OpenApiRequest
 from alibabacloud_tea_util.models import RuntimeOptions
 from alibabacloud_credentials.client import Client as CredClient
+from alibabacloud_credentials.models import Config as CredConfig
 from typing import Optional, Dict, Any, Tuple
 
 DEFAULT_REGION_ID = "cn-hangzhou"
@@ -36,9 +37,10 @@ class LepakClient:
         version: str,
         access_key_id: Optional[str] = None,
         access_key_secret: Optional[str] = None,
+        endpoint: Optional[str] = None,
+        credential_config: Optional[Dict[str, Any]] = None,
         runtime_options: Optional[RuntimeOptions] = DEFAULT_RUNTIME_OPTIONS,
         region_id: str = DEFAULT_REGION_ID,
-        endpoint: Optional[str] = None,
         **kwargs: Dict[str, Any],
     ):
         """
@@ -59,13 +61,16 @@ class LepakClient:
         self.region_id = region_id
         self.kwargs = kwargs
         self.endpoint = endpoint
+        self.credential_config = (
+            CredConfig(**credential_config) if credential_config else None
+        )
         self.runtime_options = runtime_options
 
     def _build_config(self) -> Config:
         """Build OpenAPI config using explicit AK/SK or the default credential chain."""
         if not self.ak or not self.sk:
             return Config(
-                credential=CredClient(),
+                credential=CredClient(self.credential_config),
                 endpoint=(
                     self.endpoint
                     if self.endpoint
